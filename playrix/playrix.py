@@ -14,7 +14,7 @@ def is_valid_github_repository_url(potential_url: str) -> bool:
         Returns:
             (bool): True if the given URL is a valid github repository, False otherwise.
         Example:
-            >>> is_valid_github_repository_url("https://github.com/COMPANY/REPOSITORY")
+            >>> is_valid_github_repository_url("https://github.com/OWNER/REPOSITORY")
             True
             >>> is_valid_github_repository_url("https://NOTGITHUB.com/SOMETHING")
             False
@@ -60,11 +60,11 @@ def get_arg_dict(sys_args: List[str]) -> dict:
         Raises:
             ValueError: When fails to assign an argument from sys_args, raises value error
         Examples:
-            >>> get_arg_dict(["file.py", "https://github.com/COMPANY/REPOSITORY"])
-            {"url": "https://github.com/COMPANY/REPOSITORY", "since": None, "until": None, "branch": None}
-            >>> get_arg_dict(["file.py", "https://github.com/COMPANY/REPOSITORY", "BRANCH_NAME"])
-            {"url": "https://github.com/COMPANY/REPOSITORY", "since": None, "until": None, "branch": "BRANCH_NAME"}
-            >>> get_arg_dict(["file.py", "https://github.com/COMPANY/REPOSITORY", "2020-12-27"])
+            >>> get_arg_dict(["file.py", "https://github.com/OWNER/REPOSITORY"])
+            {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
+            >>> get_arg_dict(["file.py", "https://github.com/OWNER/REPOSITORY", "BRANCH_NAME"])
+            {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": "BRANCH_NAME"}
+            >>> get_arg_dict(["file.py", "https://github.com/OWNER/REPOSITORY", "2020-12-27"])
     """
     if len(sys_args) < 2:  # Only file argument
         raise ValueError("Not enough arguments, you must specify repository URL as the first parameter")
@@ -80,7 +80,7 @@ def get_arg_dict(sys_args: List[str]) -> dict:
     if is_valid_github_repository_url(sys_args[1]):
         args["url"] = sys_args[1]
     else:
-        raise ValueError(f"Wrong URL {sys_args[1]}! Expected https://github.com/COMPANY/REPOSITORY pattern")
+        raise ValueError(f"Wrong URL {sys_args[1]}! Expected https://github.com/OWNER/REPOSITORY pattern")
 
     if len(sys_args) == 3:  # file, URL and since/branch
         if is_github_date(sys_args[2]):
@@ -107,6 +107,27 @@ def get_arg_dict(sys_args: List[str]) -> dict:
 
     return args
 
+
+def get_commit_payload(arg_dict: dict) -> dict:
+    """
+    Creates payload for get commit request. Parameter per_page is set to 100 (max value). Parameter page
+    is set to 1.
+        Args:
+            arg_dict (dict): dictionary of script arguments - url, since, until, branch
+        Returns:
+            payload (dict) dictionary with parameter names as keys and parameter values as values
+        Examples:
+            >>> get_commit_payload({"url": "https...", "since": "2020-12-27", "until": None, "branch": None})
+            {"per_page": 100, "page": 1, "since": "2020-12-27", "sha": "master"}
+    """
+    payload = {"per_page": 100, "page": 1, "sha": "master"}
+    if arg_dict["since"] is not None:
+        payload["since"] = arg_dict["since"]
+    if arg_dict["until"] is not None:
+        payload["until"] = arg_dict["until"]
+    if arg_dict["branch"] is not None:
+        payload["sha"] = arg_dict["branch"]
+    return payload
 
 if __name__ == "__main__":
     arg_dict = get_arg_dict(sys.argv)
