@@ -73,30 +73,30 @@ class playrixTest(unittest.TestCase):
 
     def test_get_commit_payload(self):
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
-        test_dict = {"per_page": 100, "page": 1, "sha": "master"}
+        test_dict = {"sha": "master"}
         self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": "BRANCH_NAME"}
-        test_dict = {"per_page": 100, "page": 1, "sha": "BRANCH_NAME"}
+        test_dict = {"sha": "BRANCH_NAME"}
         self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27", "until": None, "branch": None}
-        test_dict = {"per_page": 100, "page": 1, "sha": "master", "since": "2020-12-27"}
+        test_dict = {"sha": "master", "since": "2020-12-27"}
         self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
                     "until": "2021-05-01", "branch": None}
-        test_dict = {"per_page": 100, "page": 1, "sha": "master", "since": "2020-12-27", "until": "2021-05-01"}
+        test_dict = {"sha": "master", "since": "2020-12-27", "until": "2021-05-01"}
         self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
                     "until": None, "branch": "BRANCH_NAME"}
-        test_dict = {"per_page": 100, "page": 1, "sha": "BRANCH_NAME", "since": "2020-12-27"}
+        test_dict = {"sha": "BRANCH_NAME", "since": "2020-12-27"}
         self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
                     "until": "2021-05-01", "branch": "BRANCH_NAME"}
-        test_dict = {"per_page": 100, "page": 1, "sha": "BRANCH_NAME", "since": "2020-12-27", "until": "2021-05-01"}
+        test_dict = {"sha": "BRANCH_NAME", "since": "2020-12-27", "until": "2021-05-01"}
         self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
 
 
