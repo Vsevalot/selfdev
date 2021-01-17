@@ -2,6 +2,7 @@
 
 import unittest
 import playrix
+import datetime
 
 
 class playrixTest(unittest.TestCase):
@@ -71,33 +72,100 @@ class playrixTest(unittest.TestCase):
         self.assertRaises(ValueError, playrix.get_arg_dict, ["file.py", "https://github.com/OWNER/REPOSITORY",
                                                              "2020-12-27", "INVALID DATE", "BRANCH_NAME"])
 
-    def test_get_commit_payload(self):
+    def test_get_commits_payload(self):
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
-        test_dict = {"sha": "master"}
-        self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
+        test_dict = {"sha": "master", "per_page": 100, "page": 1}
+        self.assertDictEqual(test_dict, playrix.get_commits_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": "BRANCH_NAME"}
-        test_dict = {"sha": "BRANCH_NAME"}
-        self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
+        test_dict = {"sha": "BRANCH_NAME", "per_page": 100, "page": 1}
+        self.assertDictEqual(test_dict, playrix.get_commits_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27", "until": None, "branch": None}
-        test_dict = {"sha": "master", "since": "2020-12-27"}
-        self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
+        test_dict = {"sha": "master", "since": "2020-12-27", "per_page": 100, "page": 1}
+        self.assertDictEqual(test_dict, playrix.get_commits_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
                     "until": "2021-05-01", "branch": None}
-        test_dict = {"sha": "master", "since": "2020-12-27", "until": "2021-05-01"}
-        self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
+        test_dict = {"sha": "master", "since": "2020-12-27", "until": "2021-05-01", "per_page": 100, "page": 1}
+        self.assertDictEqual(test_dict, playrix.get_commits_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
                     "until": None, "branch": "BRANCH_NAME"}
-        test_dict = {"sha": "BRANCH_NAME", "since": "2020-12-27"}
-        self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
+        test_dict = {"sha": "BRANCH_NAME", "since": "2020-12-27", "per_page": 100, "page": 1}
+        self.assertDictEqual(test_dict, playrix.get_commits_payload(arg_dict))
 
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
                     "until": "2021-05-01", "branch": "BRANCH_NAME"}
-        test_dict = {"sha": "BRANCH_NAME", "since": "2020-12-27", "until": "2021-05-01"}
-        self.assertDictEqual(test_dict, playrix.get_commit_payload(arg_dict))
+        test_dict = {"sha": "BRANCH_NAME", "since": "2020-12-27", "until": "2021-05-01", "per_page": 100, "page": 1}
+        self.assertDictEqual(test_dict, playrix.get_commits_payload(arg_dict))
+
+    def test_get_pulls_payload(self):
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
+        test_dict = {"base": "master", "per_page": 100, "page": 1, "state": "all"}
+        self.assertDictEqual(test_dict, playrix.get_pulls_payload(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": "BRANCH_NAME"}
+        test_dict = {"base": "BRANCH_NAME", "per_page": 100, "page": 1, "state": "all"}
+        self.assertDictEqual(test_dict, playrix.get_pulls_payload(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27", "until": None, "branch": None}
+        test_dict = {"base": "master", "per_page": 100, "page": 1, "state": "all"}
+        self.assertDictEqual(test_dict, playrix.get_pulls_payload(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
+                    "until": "2021-05-01", "branch": None}
+        test_dict = {"base": "master", "per_page": 100, "page": 1, "state": "all"}
+        self.assertDictEqual(test_dict, playrix.get_pulls_payload(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
+                    "until": None, "branch": "BRANCH_NAME"}
+        test_dict = {"base": "BRANCH_NAME", "per_page": 100, "page": 1, "state": "all"}
+        self.assertDictEqual(test_dict, playrix.get_pulls_payload(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
+                    "until": "2021-05-01", "branch": "BRANCH_NAME"}
+        test_dict = {"base": "BRANCH_NAME", "per_page": 100, "page": 1, "state": "all"}
+        self.assertDictEqual(test_dict, playrix.get_pulls_payload(arg_dict))
+
+    def test_get_time_period(self):
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
+        test_time_period = "of all time"
+        self.assertEqual(test_time_period, playrix.get_time_period(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": "BRANCH_NAME"}
+        test_time_period = "of all time"
+        self.assertEqual(test_time_period, playrix.get_time_period(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27", "until": None, "branch": None}
+        test_time_period = "since 2020-12-27"
+        self.assertEqual(test_time_period, playrix.get_time_period(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
+                    "until": "2021-05-01", "branch": None}
+        test_time_period = "since 2020-12-27 until 2021-05-01"
+        self.assertEqual(test_time_period, playrix.get_time_period(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
+                    "until": None, "branch": "BRANCH_NAME"}
+        test_time_period = "since 2020-12-27"
+        self.assertEqual(test_time_period, playrix.get_time_period(arg_dict))
+
+        arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
+                    "until": "2021-05-01", "branch": "BRANCH_NAME"}
+        test_time_period = "since 2020-12-27 until 2021-05-01"
+        self.assertEqual(test_time_period, playrix.get_time_period(arg_dict))
+
+    def test_in_time_period(self):
+        date_to_check = datetime.datetime.strptime("2020-12-27", "%Y-%m-%d")
+        since_date = datetime.datetime.strptime("1994-12-27", "%Y-%m-%d")
+        until_date = datetime.datetime.strptime("2000-12-27", "%Y-%m-%d")
+        self.assertTrue(playrix.in_time_period(date_to_check, None, None))
+        self.assertTrue(playrix.in_time_period(date_to_check, since_date, None))
+        self.assertFalse(playrix.in_time_period(date_to_check, None, until_date))
+        self.assertFalse(playrix.in_time_period(date_to_check, since_date, until_date))
+        date_to_check = datetime.datetime.strptime("1998-12-27", "%Y-%m-%d")
+        self.assertTrue(playrix.in_time_period(date_to_check, None, until_date))
 
 
 if __name__ == "__main__":
