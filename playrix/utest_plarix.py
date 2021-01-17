@@ -32,46 +32,6 @@ class playrixTest(unittest.TestCase):
         self.assertFalse(playrix.is_github_date("asdfasfasf"))
         self.assertFalse(playrix.is_github_date(""))
 
-    def test_get_arg_dict(self):
-        argv = ["file.py", "https://github.com/OWNER/REPOSITORY"]
-        test_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
-        self.assertDictEqual(test_dict, playrix.get_arg_dict(argv))
-
-        argv = ["file.py", "https://github.com/OWNER/REPOSITORY", "BRANCH_NAME"]
-        test_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None,
-                     "until": None, "branch": "BRANCH_NAME"}
-        self.assertDictEqual(test_dict, playrix.get_arg_dict(argv))
-
-        argv = ["file.py", "https://github.com/OWNER/REPOSITORY", "2020-12-27"]
-        test_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
-                     "until": None, "branch": None}
-        self.assertDictEqual(test_dict, playrix.get_arg_dict(argv))
-
-        argv = ["file.py", "https://github.com/OWNER/REPOSITORY", "2020-12-27", "2021-05-01"]
-        test_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
-                     "until": "2021-05-01", "branch": None}
-        self.assertDictEqual(test_dict, playrix.get_arg_dict(argv))
-
-        argv = ["file.py", "https://github.com/OWNER/REPOSITORY", "2020-12-27", "BRANCH_NAME"]
-        test_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
-                     "until": None, "branch": "BRANCH_NAME"}
-        self.assertDictEqual(test_dict, playrix.get_arg_dict(argv))
-
-        argv = ["file.py", "https://github.com/OWNER/REPOSITORY", "2020-12-27", "2021-05-01", "BRANCH_NAME"]
-        test_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": "2020-12-27",
-                     "until": "2021-05-01", "branch": "BRANCH_NAME"}
-        self.assertDictEqual(test_dict, playrix.get_arg_dict(argv))
-
-        self.assertRaises(ValueError, playrix.get_arg_dict, [])
-        self.assertRaises(ValueError, playrix.get_arg_dict, [True])
-        self.assertRaises(ValueError, playrix.get_arg_dict, ["s1"])
-        self.assertRaises(ValueError, playrix.get_arg_dict, ["s1", "s2", "s3", "s4", "s5", "s6"])
-        self.assertRaises(ValueError, playrix.get_arg_dict, ["file.py", "https://NOTGITHUB.com/OWNER/REPOSITORY"])
-        self.assertRaises(ValueError, playrix.get_arg_dict, ["file.py", "https://github.com/OWNER/REPOSITORY",
-                                                             "INVALID DATE", "BRANCH_NAME"])
-        self.assertRaises(ValueError, playrix.get_arg_dict, ["file.py", "https://github.com/OWNER/REPOSITORY",
-                                                             "2020-12-27", "INVALID DATE", "BRANCH_NAME"])
-
     def test_get_commits_payload(self):
         arg_dict = {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
         test_dict = {"sha": "master", "per_page": 100, "page": 1}

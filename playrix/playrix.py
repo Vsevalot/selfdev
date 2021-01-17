@@ -1,9 +1,9 @@
 #!/usr/bin/python
-import sys
 import requests
 import re
 import datetime
 from typing import List, Tuple, Dict, Union
+import argparse
 
 
 def is_valid_github_repository_url(potential_url: str) -> bool:
@@ -26,7 +26,7 @@ def is_valid_github_repository_url(potential_url: str) -> bool:
         return False
 
 
-def is_github_date(date_str: str) -> bool:
+def is_valid_github_date(date_str: str) -> bool:
     """
     Checks if the given date has github date format: YYYY-MM-DD
         Args:
@@ -34,9 +34,9 @@ def is_github_date(date_str: str) -> bool:
         Returns:
             (bool) True if date_str has github date format, False otherwise.
         Examples:
-            >>> is_github_date("2020-05-11")
+            >>> is_valid_github_date("2020-05-11")
             True
-            >>> is_github_date("11.05.2020")
+            >>> is_valid_github_date("11.05.2020")
             False
     """
     try:
@@ -46,87 +46,25 @@ def is_github_date(date_str: str) -> bool:
         return False
 
 
-def get_arg_dict(sys_args: List[str]) -> dict:
-    """
-    Parses script arguments to a dictionary with keys: url - URL (Always required) of a github repository.
-    since (Optional) - date since analysis should be performed. Expected as YYYY-MM-DD.
-    until (Optional) - date until analysis should be performed. Expected as YYYY-MM-DD.
-    branch (Optional) - repository branch on which analysis should be performed.
-    Always expects 3 and 4 argument as dates. If a date check failed assigns argument to the branch key.
-        Args:
-            sys_args (List[str]): list of script arguments - sys.argv
-        Returns:
-            args (dict): dict with filled values and None if optional argument was not in the sys_args
-        Raises:
-            ValueError: When fails to assign an argument from sys_args, raises value error
-        Examples:
-            >>> get_arg_dict(["file.py", "https://github.com/OWNER/REPOSITORY"])
-            {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": None}
-            >>> get_arg_dict(["file.py", "https://github.com/OWNER/REPOSITORY", "BRANCH_NAME"])
-            {"url": "https://github.com/OWNER/REPOSITORY", "since": None, "until": None, "branch": "BRANCH_NAME"}
-            >>> get_arg_dict(["file.py", "https://github.com/OWNER/REPOSITORY", "2020-12-27"])
-    """
-    if len(sys_args) < 2:  # Only file argument
-        raise ValueError("Not enough arguments, you must specify repository URL as the first parameter")
-    if len(sys_args) > 5:  # 1 - File argument, 2 - URL, 3 - first date, 4 - last date, 5 - branch, 6 ???
-        raise ValueError("Too many arguments. The script expects: URL, date1 - optional, "
-                         "date2 - optional, branch - optional")
-
-    for arg in sys_args:
-        if type(arg) is not str:
-            raise ValueError(f"All elements of the {sys_args} must be str!")
-
-    args = {"url": None, "since": None, "until": None, "branch": None}
-    if is_valid_github_repository_url(sys_args[1]):
-        args["url"] = sys_args[1]
-    else:
-        raise ValueError(f"Wrong URL {sys_args[1]}! Expected https://github.com/OWNER/REPOSITORY pattern")
-
-    if len(sys_args) == 3:  # file, URL and since/branch
-        if is_github_date(sys_args[2]):
-            args["since"] = sys_args[2]
-        else:
-            args["branch"] = sys_args[2]
-    elif len(sys_args) > 3:  # file, URL, since ...
-        if is_github_date(sys_args[2]):
-            args["since"] = sys_args[2]
-        else:
-            raise ValueError(f"Wrong date format {sys_args[2]}! Expected YYYY-MM-DD")
-
-        if len(sys_args) == 4:  # file, URL, since and until/branch
-            if is_github_date(sys_args[3]):
-                args["until"] = sys_args[3]
-            else:
-                args["branch"] = sys_args[3]
-        elif len(sys_args) == 5:  # file, URL, since, until and branch
-            if is_github_date(sys_args[3]):
-                args["until"] = sys_args[3]
-            else:
-                raise ValueError(f"Wrong date format {sys_args[3]}! Expected YYYY-MM-DD")
-            args["branch"] = sys_args[4]
-
-    return args
-
-
-def get_commits_payload(arg_dict: Dict[str, Union[str, None]]) -> Dict[str, str]:
+def get_commits_payload(since: Union[str, None], until: Union[str, None], branch: str) -> Dict[str, Union[str, int]]:
     """
     Creates payload for get commits request from script arguments in arg_dict.
     Parameter per_page is set to 100 (max value). Parameter page is set to 1
         Args:
-            arg_dict (Dict[str, Union[str, None]): dictionary of script arguments - url, since, until, branch
+            since (str): a string date in form "YYYY-MM-DD" or None
+            until (str): a string date in form "YYYY-MM-DD" or None
+            branch (str): name of a branch in repository
         Returns:
-            payload (Dict[str, str]) dictionary with parameter name as keys and parameter values as values
+            payload (Dict[str, Union[str, int]]) dictionary with parameters for List commits in github.api
         Examples:
-            >>> get_commits_payload({"url": "https...", "since": "2020-12-27", "until": None, "branch": None})
+            >>> get_commits_payload("2020-12-27", None, "master")
             {"sha": "master", "since": "2020-12-27", "per_page": 100, "page": 1}
     """
-    payload = {"sha": "master", "per_page": 100, "page": 1}
-    if arg_dict["since"] is not None:
-        payload["since"] = arg_dict["since"]
-    if arg_dict["until"] is not None:
-        payload["until"] = arg_dict["until"]
-    if arg_dict["branch"] is not None:
-        payload["sha"] = arg_dict["branch"]
+    payload = {"sha": branch, "per_page": 100, "page": 1}
+    if since is not None:
+        payload["since"] = since
+    if until is not None:
+        payload["until"] = until
     return payload
 
 
@@ -156,7 +94,7 @@ def raise_for_limit(response: requests.request) -> None:
 
 
 def get_contributors_dict(get_url: str, payload: Dict[str, Union[str, int]],
-                           top: int, vp: bool) -> List[Tuple[str, int]]:
+                          top: int = 30, vp: bool = True) -> List[Tuple[str, int]]:
     """
     Counts all commits and returns a list of the (top) most active contributors
     within given time period for the given branch. If number of contributors is less than top,
@@ -166,7 +104,7 @@ def get_contributors_dict(get_url: str, payload: Dict[str, Union[str, int]],
             get_url (str): "https://api.github.com/repos/{owner}/{repository}/commits" format string
             payload (Dict[str, Union[str, int]]): dictionary with "sha" key and branch name as value,
             "since" key and "YYYY-MM-DD" format value.
-            top (int): number of required contributors
+            top (int): number of top required contributors
             vp (bool): visual progress. If True - print's a dot with each get request
         Returns:
             top_contributors_sorted (List[Tuple[str, int]]): List of tuples (login, contributions),
@@ -175,8 +113,8 @@ def get_contributors_dict(get_url: str, payload: Dict[str, Union[str, int]],
             HTTPError: any http errors from response.raise_for_status() - not a 2XX status code
             OutOfLimitError: raises when no requests to github.api remained
         Examples:
-            >>> get_contributors_dict("https...", {"sha": "master", "since": "2015-12-27"})
-            [(login1, number of contributions), (login2, number of contributions) ...]
+            >>> get_contributors_dict("https...", {"sha": "master", "since": "2015-12-27", "per_page": 100, "page": 1})
+            [("login1", 155), ("login2", 143) ...]
     """
     top_contributors = {}
     while True:
@@ -206,46 +144,53 @@ def get_contributors_dict(get_url: str, payload: Dict[str, Union[str, int]],
     return top_contributors_sorted[:top]
 
 
-def get_time_period(arg_dict: Dict[str, Union[str, None]]) -> str:
+def get_time_period_string(since: str = None, until: str = None) -> str:
     """
     Generates time period in string form for the given arguments of the arg_dict
         Args:
-            arg_dict (Dict[str, Union[str, None]]): dictionary of script arguments - url, since, until, branch
+            since (str): a string date
+            until (str): a string date
         Returns:
-            time_period (str)
+            time_period (str): string representation of the given time period
         Examples:
-            >>> get_time_period({"url": "https...", "since": "2020-12-27", "until": None, "branch": None})
-            since 2020-12-27
-            >>> get_time_period({"url": "https...", "since": None, "until": None, "branch": None})
+            >>> get_time_period_string()
             of all time
-            >>> get_time_period({"url": "https...", "since": "2020-12-27", "until": "2021-01-15", "branch": None})
+            >>> get_time_period_string("2020-12-27")
+            since 2020-12-27
+            >>> get_time_period_string(until="2020-12-27")
+            until 2020-12-27
+            >>> get_time_period_string(since="2020-12-27", until="2020-12-27")
             since 2020-12-27 until 2021-01-15
     """
     time_period = "of all time"
-    if (arg_dict["since"] is not None) and (arg_dict["until"] is not None):
-        time_period = f"since {arg_dict['since']} until {arg_dict['until']}"
-    elif arg_dict["since"] is not None:
-        time_period = f"since {arg_dict['since']}"
-    elif arg_dict["until"] is not None:
-        time_period = f"until {arg_dict['until']}"
+    if (since is not None) and (until is not None):
+        time_period = f"since {since} until {until}"
+    elif since is not None:
+        time_period = f"since {since}"
+    elif until is not None:
+        time_period = f"until {until}"
     return time_period
 
 
-def print_top_active(arg_dict: Dict[str, Union[str, None]], top: int = 30, vp: bool = True) -> None:
+def print_top_active(repo_url: str, since: Union[str, None] = None, until: Union[str, None] = None,
+                     branch: str = "master", top: int = 30, vp: bool = True) -> None:
     """
     Print a table of the top contributors for the given branch and time period.
     If number of contributors is less than top, prints data for all contributors.
         Args:
-            arg_dict (Dict[str, Union[str, None]]): dictionary of script arguments - url, since, until, branch
-            top (int): number of required contributors. The default value is 30
-            vp (bool): visual progress. Default is True. If True - print's a dot with each get request
+            repo_url (str): URL to a github repository
+            since (str): a string date in form "YYYY-MM-DD" or None
+            until (str): a string date in form "YYYY-MM-DD" or None
+            branch (str): name of a branch in repository
+            top (int): number of required contributors
+            vp (bool): visual progress. If True - print's a dot with each get request
         Returns:
             None
         Raises:
             HTTPError: any http errors from response.raise_for_status() - not a 2XX status code
             OutOfLimitError: raises when no requests to github.api remained
         Examples:
-            >>> print_top_active({"url": "https...", "since": "2020-12-27", "until": None, "branch": None})
+            >>> print_top_active("https...")
             List of the most active contributors of all time for master
             Login                                      contributions
             --------------------------------------------------------
@@ -253,41 +198,38 @@ def print_top_active(arg_dict: Dict[str, Union[str, None]], top: int = 30, vp: b
             login2                                               133
             ...
     """
-    owner = arg_dict["url"].split('/')[-2]
-    repository = arg_dict["url"].split('/')[-1]
-    payload = get_commits_payload(arg_dict)
+    owner = repo_url.split('/')[-2]
+    repository = repo_url.split('/')[-1]
+    payload = get_commits_payload(since, until, branch)
     get_url = f"https://api.github.com/repos/{owner}/{repository}/commits"
     top_contributors = get_contributors_dict(get_url, payload, top, vp)
 
-    time_period = get_time_period(arg_dict)
+    time_period = get_time_period_string(since, until)
     if len(top_contributors) == 0:
-        print(f"No contributors {time_period} for {payload['sha']}")
+        print(f"No contributors {time_period} for {branch}")
         return
 
-    print(f"List of the most active contributors {time_period} for {payload['sha']}")
+    print(f"List of the most active contributors {time_period} for {branch}")
     print(f"{'Login':40s}{'contributions':13s}")
     print(53 * '-')
     for contributor in top_contributors:
         print(f"{contributor[0]:40s}{contributor[1]:13d}")
 
 
-def get_pulls_payload(arg_dict: Dict[str, Union[str, None]]) -> Dict[str, Union[str, int]]:
+def get_pr_payload(branch: str) -> Dict[str, Union[str, int]]:
     """
     Creates payload for get PR request from script arguments in arg_dict.
     Parameter per_page is set to 100 (max value). Parameter page is set to 1.
     Parameter state is set to all - opend and closed PR.
         Args:
-            arg_dict (Dict[str, Union[str, None]): dictionary of script arguments - url, since, until, branch
+            branch (str): a name of the repository branch
         Returns:
             payload (Dict[str, str]) dictionary with parameter name as keys and parameter values as values
         Examples:
-            >>> get_pulls_payload({"url": "https...", "since": "2020-12-27", "until": None, "branch": None})
+            >>> get_pr_payload("master")
             {"base": "master", "per_page": 100, "page": 1, "state": "all"}
     """
-    payload = {"base": "master", "per_page": 100, "page": 1, "state": "all"}
-    if arg_dict["branch"] is not None:
-        payload["base"] = arg_dict["branch"]
-    return payload
+    return {"base": branch, "per_page": 100, "page": 1, "state": "all"}
 
 
 def in_time_period(date_to_check: datetime.datetime,
@@ -322,96 +264,36 @@ def in_time_period(date_to_check: datetime.datetime,
         return True
 
 
-def get_pull_requests_dict(arg_dict: Dict[str, Union[str, None]], days_to_old: int, vp: bool) -> Dict[str, int]:
+def print_pull_request_data(repo_url: str, since: Union[str, None] = None, until: Union[str, None] = None,
+                            branch: str = "master", days_to_old: int = 30, vp: bool = True) -> None:
     """
-    Counts all Pull Requests - PR of the given time period and given branch.
-    Returns a dictionary with number of opened, closed and old PR.
-    Uses List pull requests from github.api.
+    Print data for Pull Requests - PR of the given time period and the given branch.
         Args:
-            arg_dict (Dict[str, Union[str, None]]): dictionary of script arguments - url, since, until, branch
-            "since" key and "YYYY-MM-DD" format value.
-            days_to_old (int): If an PR is created in the given time period and stil be opend 
-            for days_to_old or more it's consider to be an old one
+            repo_url (str): URL to a github repository
+            since (str): a string date in form "YYYY-MM-DD" or None
+            until (str): a string date in form "YYYY-MM-DD" or None
+            branch (str): name of a branch in repository
+            days_to_old (int): if an PR is created in the given time period and still
+            be opened for days_to_old or more it's consider to be an old one. The default value is 30
             vp (bool): visual progress. If True - print's a dot with each get request
-        Returns:
-            pull_request_dict (Dict[str, int]): Dictionary with keys: opened, closed, old
-        Raises:
-            HTTPError: any http errors from response.raise_for_status() - not a 2XX status code
-            OutOfLimitError: raises when no requests to github.api remained
-        Examples:
-            >>> get_pull_requests_dict({"url": "https...", "since": "2020-12-27", "until": None, "branch": None}, 30)
-            {"opened": 155, "closed": 43, "old": 13}
-    """
-    owner = arg_dict["url"].split('/')[-2]
-    repository = arg_dict["url"].split('/')[-1]
-    get_url = f"https://api.github.com/repos/{owner}/{repository}/pulls"
-    payload = get_pulls_payload(arg_dict)
-
-    since_date = None
-    if arg_dict["since"] is not None:
-        since_date = datetime.datetime.strptime(arg_dict["since"], "%Y-%m-%d")
-
-    until_date = None
-    if arg_dict["until"] is not None:
-        until_date = datetime.datetime.strptime(arg_dict["until"], "%Y-%m-%d")
-
-    today_date = datetime.datetime.now()
-    pull_request_dict = {"opened": 0, "closed": 0, "old": 0}
-    while True:
-        if vp:
-            print('.', end='')  # Just a visualisation that the script is working
-        response = requests.get(get_url, params=payload, timeout=10)
-        response.raise_for_status()
-        raise_for_limit(response)
-
-        response_json = response.json()
-        for pr in response_json:
-            created_date = datetime.datetime.strptime(pr["created_at"][:10], "%Y-%m-%d")
-            if in_time_period(created_date, since_date, until_date):
-                pull_request_dict["opened"] += 1
-                if pr["state"] == "open":
-                    delta = today_date - created_date
-                    if delta.days >= days_to_old:
-                        pull_request_dict["old"] += 1
-
-            if pr["closed_at"] is not None:
-                closed_date = datetime.datetime.strptime(pr["closed_at"][:10], "%Y-%m-%d")
-                if in_time_period(closed_date, since_date, until_date):
-                    pull_request_dict["closed"] += 1
-
-        if len(response_json) < payload["per_page"]:  # the number of commits is less than per_page - we reached the end
-            break
-        else:
-            payload["page"] += 1
-    if vp:
-        print()
-    return pull_request_dict
-
-
-def print_pull_request_data(arg_dict: Dict[str, Union[str, None]], days_to_old: int = 30, vp: bool = True) -> None:
-    """
-    Print data for Pull Requests - PR of the given time period and given branch.
-        Args:
-            arg_dict (Dict[str, Union[str, None]]): dictionary of script arguments - url, since, until, branch
-            days_to_old (int): If an PR is created in the given time period and stil be opend 
-            for days_to_old or more it's consider to be an old one. Default value 30
-            vp (bool): visual progress. Default - True. If True - print's a dot with each get request
         Returns:
             None
         Raises:
             HTTPError: any http errors from response.raise_for_status() - not a 2XX status code
             OutOfLimitError: raises when no requests to github.api remained
         Examples:
-            >>> print_pull_request_data({"url": "https...", "since": "2020-12-27", "until": None, "branch": None})
+            >>> print_pull_request_data("https...")
             .................
             Pull request data since 2020-12-27 for master:
             Opened 155
             Closed 43
             Old: 17
     """
-    pull_request_dict = get_pull_requests_dict(arg_dict, days_to_old, vp)
-    time_period = get_time_period(arg_dict)
-    print(f"Pull request data {time_period} for {arg_dict['branch']}:")
+    payload = get_pr_payload(branch)
+    pull_request_dict = get_issues_dict(repo_url, payload, since, until,
+                                        pr_issue=True, days_to_old=days_to_old, vp=vp)
+    time_period = get_time_period_string(since, until)
+    print(f"Pull request data {time_period} for {branch}:")
     print(f"Opened: {pull_request_dict['opened']:13d}")
     print(f"Closed: {pull_request_dict['closed']:13d}")
     print(f"Old: {pull_request_dict['old']:16d}")
@@ -433,16 +315,21 @@ def get_issues_payload() -> Dict[str, Union[str, int]]:
     return {"per_page": 100, "page": 1, "state": "all"}
 
 
-def get_issues_dict(arg_dict: Dict[str, Union[str, None]], days_to_old: int, vp: bool) -> Dict[str, int]:
+def get_issues_dict(repo_url: str, payload: Dict[str, Union[str, int]], since: Union[str, None] = None,
+                    until: Union[str, None] = None, pr_issue: bool = False,
+                    days_to_old: int = 30, vp: bool = True) -> Dict[str, int]:
     """
     Counts all issues of the given time period.
     Returns a dictionary with number of opened, closed and old issues.
-    Uses List issues from github.api.
+    get_url determe used github.api function ()
         Args:
-            arg_dict (Dict[str, Union[str, None]]): dictionary of script arguments - url, since, until, branch
-            "since" key and "YYYY-MM-DD" format value.
-            days_to_old (int): If an issues is created in the given time period and stil be opend
-            for days_to_old or more it's consider to be an old one
+            repo_url (str): URL to a github repository
+            payload (Dict[str, Union[str, int]]): payload for get request with corresponding api function parameters
+            since (str): a string date in form "YYYY-MM-DD" or None
+            until (str): a string date in form "YYYY-MM-DD" or None
+            pr_issue (bool): interested only in pull requests, default False
+            days_to_old (int): if an issue is created in the given time period and still
+            be opened for days_to_old or more it's consider to be an old one. The default value is 30
             vp (bool): visual progress. If True - print's a dot with each get request
         Returns:
             pull_request_dict (Dict[str, int]): Dictionary with keys: opened, closed, old
@@ -450,21 +337,25 @@ def get_issues_dict(arg_dict: Dict[str, Union[str, None]], days_to_old: int, vp:
             HTTPError: any http errors from response.raise_for_status() - not a 2XX status code
             OutOfLimitError: raises when no requests to github.api remained
         Examples:
-            >>> get_issues_dict({"url": "https...", "since": "2020-12-27", "until": None, "branch": None}, 14)
+            >>> get_issues_dict("https...", {"base": "master", "per_page": 100, "page": 1})
             {"opened": 83, "closed": 50, "old": 4}
     """
-    owner = arg_dict["url"].split('/')[-2]
-    repository = arg_dict["url"].split('/')[-1]
-    get_url = f"https://api.github.com/repos/{owner}/{repository}/issues"
-    payload = get_issues_payload()
+    owner = repo_url.split('/')[-2]
+    repository = repo_url.split('/')[-1]
+    if pr_issue:
+        get_url = f"https://api.github.com/repos/{owner}/{repository}/pulls"
+    else:
+        get_url = f"https://api.github.com/repos/{owner}/{repository}/issues"
 
-    since_date = None
-    if arg_dict["since"] is not None:
-        since_date = datetime.datetime.strptime(arg_dict["since"], "%Y-%m-%d")
+    if since is not None:
+        since_date = datetime.datetime.strptime(since, "%Y-%m-%d")
+    else:
+        since_date = None
 
-    until_date = None
-    if arg_dict["until"] is not None:
-        until_date = datetime.datetime.strptime(arg_dict["until"], "%Y-%m-%d")
+    if until is not None:
+        until_date = datetime.datetime.strptime(until, "%Y-%m-%d")
+    else:
+        until_date = None
 
     today_date = datetime.datetime.now()
     issue_dict = {"opened": 0, "closed": 0, "old": 0}
@@ -490,7 +381,7 @@ def get_issues_dict(arg_dict: Dict[str, Union[str, None]], days_to_old: int, vp:
                 if in_time_period(closed_date, since_date, until_date):
                     issue_dict["closed"] += 1
 
-        if len(response_json) < payload["per_page"]:  # the number of commits is less than per_page - we reached the end
+        if len(response_json) < payload["per_page"]:  # the number of elements is less than per_page - we reached the end
             break
         else:
             payload["page"] += 1
@@ -499,41 +390,100 @@ def get_issues_dict(arg_dict: Dict[str, Union[str, None]], days_to_old: int, vp:
     return issue_dict
 
 
-def print_issues_data(arg_dict: Dict[str, Union[str, None]], days_to_old: int = 14, vp: bool = True) -> None:
+def print_issues_data(repo_url: str, since: Union[str, None] = None, until: Union[str, None] = None,
+                      days_to_old: int = 14, vp: bool = True) -> None:
     """
     Print data for issues of the given time period.
         Args:
-            arg_dict (Dict[str, Union[str, None]]): dictionary of script arguments - url, since, until, branch
-            days_to_old (int): If an issue is created in the given time period and stil be opend
-             for days_to_old or more it's consider to be an old one. Default value 14
-            vp (bool): visual progress. Default - True. If True - print's a dot with each get request
+            repo_url (str): URL to a github repository
+            since (str): a string date in form "YYYY-MM-DD" or None
+            until (str): a string date in form "YYYY-MM-DD" or None
+            days_to_old (int): if an issue is created in the given time period and still
+            be opened for days_to_old or more it's consider to be an old one. The default value is 14
+            vp (bool): visual progress. If True - print's a dot with each get request
         Returns:
             None
         Raises:
             HTTPError: any http errors from response.raise_for_status() - not a 2XX status code
             OutOfLimitError: raises when no requests to github.api remained
         Examples:
-            >>> print_issues_data({"url": "https...", "since": "2020-12-27", "until": None, "branch": None})
+            >>> print_issues_data("https://...", "2020-12-27")
             .................
             Issues data since 2020-12-27:
             Opened 101
             Closed 38
             Old: 7
     """
-    issues_dict = get_issues_dict(arg_dict, days_to_old, vp)
-    time_period = get_time_period(arg_dict)
+    payload = get_issues_payload()
+    issues_dict = get_issues_dict(repo_url, payload, since, until, days_to_old=days_to_old, vp=vp)
+    time_period = get_time_period_string(since, until)
     print(f"Issues data {time_period}:")
     print(f"Opened: {issues_dict['opened']:13d}")
     print(f"Closed: {issues_dict['closed']:13d}")
     print(f"Old: {issues_dict['old']:16d}")
 
 
+def get_arg_dict() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Statistic of repository contributors, pull requests and issues. "
+                                                 "Collects statistic for contributors, PR and issues in "
+                                                 "the given time period (optional) and "
+                                                 "the given branch (default is master) - contributors and PR only")
+    parser.add_argument("url", type=str, help="URL of a github repository. "
+                                              "Expects URL in form https://github.com/OWNER/REPOSITORY")
+    parser.add_argument("--since", "-s", type=str,
+                        help="Since which date collect statistic for contributors and PR statistic. "
+                             "Expects date in github form: YYYY-MM-DD. "
+                             "If not set, collects statistic since first record/the big bang")
+    parser.add_argument("--until", "-u", type=str,
+                        help="Until which date collect statistic for contributors and PR statistic "
+                             "Expects date in github form: YYYY-MM-DD. "
+                             "If not set, collects statistic until last record/university heat death")
+    parser.add_argument("--branch", "-b", type=str, default="master",
+                        help="Name of a branch for contributors and PR statistic, default - master")
+    parser.add_argument("--top_contributors", "-tc", type=int, default=30,
+                        help="Number of required top contributors. The default value is 30")
+    parser.add_argument("--pr_days_to_old", "-pro", type=int, default=30,
+                        help="If an PR is created in the given time period and still be opened for days_to_old "
+                             "or more it's consider to be an old one. The default value is 30")
+    parser.add_argument("--issue_days_to_old", "-io", type=int, default=14,
+                        help="If an issue is created in the given time period and still be opened for "
+                             "issue_days_to_old or more it's consider to be an old one. The default value is 14")
+    parser.add_argument("--visual_progress", "-vp", type=bool, default=True,
+                        help="Visual progress. Each request takes from 1 to 10 seconds. To visualize that the script "
+                             "is working print's a dot with each get request. The default value is True")
+
+    args = parser.parse_args()
+    if is_valid_github_repository_url(args.url):
+        pass
+    if is_valid_github_date(args.since):
+        pass
+    if is_valid_github_date(args.until):
+        pass
+    
+    return args
+
+
 if __name__ == "__main__":
-    arg_dict = get_arg_dict(sys.argv)
-    print(f"Collecting data for {arg_dict['url']} {get_time_period(arg_dict)}:")
-    print("Collecting contributors data. It might take a few minutes.")
-    print_top_active(arg_dict)
+    args = get_arg_dict()
+    print(f"Collecting data for {args.url} "
+          f"{get_time_period_string(args.since, args.until)}, {args.branch}")
+    print("\nCollecting contributors data. It might take a few minutes.")
+    print_top_active(repo_url=args.url,
+                     since=args.since,
+                     until=args.until,
+                     branch=args.branch,
+                     top=args.top_contributors,
+                     vp=args.visual_progress)
     print("\nCollecting pull requests data. It might take a few minutes.")
-    print_pull_request_data(arg_dict)
+    print_pull_request_data(repo_url=args.url,
+                            since=args.since,
+                            until=args.until,
+                            branch=args.branch,
+                            days_to_old=args.pr_days_to_old,
+                            vp=args.visual_progress)
     print("\nCollecting issues data. It might take a few minutes.")
-    print_issues_data(arg_dict)
+    print_issues_data(repo_url=args.url,
+                      since=args.since,
+                      until=args.until,
+                      days_to_old=args.issue_days_to_old,
+                      vp=args.visual_progress)
