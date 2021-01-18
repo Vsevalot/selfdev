@@ -559,7 +559,7 @@ def get_script_args() -> argparse.Namespace:
     parser.add_argument("--top_contributors", "-tc", type=int, default=30,
                         help="Number of required top contributors. The default value is 30")
     parser.add_argument("--pr_days_to_old", "-pro", type=int, default=30,
-                        help="If an PR is created in the given time period and still be opened for days_to_old "
+                        help="If an PR is created in the given time period and still be opened for pr_days_to_old "
                              "or more it's consider to be an old one. The default value is 30")
     parser.add_argument("--issue_days_to_old", "-io", type=int, default=14,
                         help="If an issue is created in the given time period and still be opened for "
