@@ -8,3 +8,4 @@ Completed projects:
 ## Repository statistic (_repo statistic_)
 A small python script working with [GITHUB REST API](https://docs.github.com/en/rest). 
 Uses only standard library and requests module.
+image test
