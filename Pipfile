@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+pytest = "==3.9.1"
+pytest-flake8 = "==1.0.4"
+
+[packages]
+envparse = "latest"
+fire = "==0.2.1"
+requests = "latest"
+aiohttp = "latest"
+
+[requires]
+python_version = "3.8"

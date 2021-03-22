@@ -1,61 +1,38 @@
 import asyncio
-from datetime import datetime
-from random import randint
+import random
+import time
+
+# ANSI colors
+colors = (
+    "\033[36m",  # Cyan
+    "\033[91m",  # Red
+    "\033[35m",  # Magenta
+    "\033[0m",   # End of color
+)
 
 
-def log(msg):
-    print(f'{datetime.now():%H:%M:%S.%f} {msg}')
+async def random_work_time_function(idx: int, threshold: int = 9) -> int:
+    print(f"{colors[idx]}Function {idx} started.")
+    random_value = random.randint(0, 10)
+    seconds_of_waiting = 0
+    while random_value < threshold:
+        print(f"{colors[idx]}Function {idx} rolled {random_value}: still working")
+        await asyncio.sleep(1)
+        seconds_of_waiting += 1
+        random_value = random.randint(0, 10)
+    print(f"{colors[idx]}Function {idx} rolled {random_value}: COMPLETED!{colors[-1]}")
+    return seconds_of_waiting
 
 
-async def say_after(msg, delay):
-    log(f"Message {msg} is scheduled for execution")
-    await asyncio.sleep(delay)  # wait and pause the script for delay seconds
-    log(msg)
-
-
-async def main_with_pauses():
-    log("script started")
-    await say_after("Hello", 2)
-    await say_after("asyncio!", 2)
-    log("complete")
-
-
-async def main_without_pauses():
-    log("script started")
-    task1 = asyncio.create_task(say_after("Hello", 2))
-    task2 = asyncio.create_task(say_after("asyncio!", 2))
-    await task1
-    await task2
-    log("complete")
-
-
-async def mimic_get_request():
-    result = randint(0, 10)
-    while result != 0:
-        try:
-            result = randint(0, 10)
-            await asyncio.sleep(1)
-        except asyncio.CancelledError:
-            log("Cancelling get request")
-            raise asyncio.CancelledError
-    return "some data"
-
-
-async def main_with_timeout(timeout):
-    log("script started")
-    for i in range(10):
-        task_get = asyncio.create_task(mimic_get_request())
-        log(f"sent get request, timeout = {timeout}")
-        await asyncio.sleep(timeout)
-        if task_get.done():
-            log(f"get request completed, response = {task_get.result()}")
-        else:
-            task_get.cancel()
-            log(f"timeout - get request froze, canceling")
-        print()
-
-    log("script completed")
+async def main():
+    res = await asyncio.gather(*(random_work_time_function(i) for i in range(3)))
+    return res
 
 
 if __name__ == '__main__':
-    asyncio.run(main_with_timeout(3))
+    start = time.time()
+    r1, r2, r3 = asyncio.run(main())
+    elapsed = time.time() - start
+    print()
+    print(f"R1 = {r1}, R2 = {r2}, R3 = {r3}")
+    print(f"Completed in {elapsed: 0.1f} seconds")
