@@ -1,14 +1,13 @@
-from re import search, compile
+from re import search, compile, findall
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 import argparse
 
 PATTERNS = {
-    "From_string": compile(r"From:\s+.+\s+.+>"),
-    "From_data": compile(r"<.+>"),
-    "To_string": compile(r"To:\s+.+>"),
-    "To_data": compile(r"<.+>"),
+    "From_string": compile(r"From:[\s\S]+?>"),
+    "To_string": compile(r"To:[\s\S]+?Subject: "),
+    "Mail": compile(r"[<'].+?[>']"),
     "Date_string": compile(r"Date:.+"),
     "Message-ID_string": compile(r"Message-ID:.+>"),
     "Message-ID_data": compile(r"<.+>")
@@ -34,9 +33,9 @@ def get_from(eml_body: str) -> Optional[str]:
     if not match:
         return None
 
-    data = search(PATTERNS["From_data"], match[0])[0][1:-1]  # without <>
-    if is_email(data):
-        return data
+    from_mail = get_mails(match[0])[0]
+    if is_email(from_mail):
+        return from_mail
     return None
 
 
@@ -45,10 +44,20 @@ def get_to(eml_body: str) -> Optional[str]:
     if not match:
         return None
 
-    data = search(PATTERNS["To_data"], match[0])[0][1:-1]  # without <>
-    if is_email(data):
-        return data
-    return None
+    to_mails = get_mails(match[0])
+    for mail in to_mails:
+        if not is_email(mail):
+            return None
+    return ', '.join(to_mails)
+
+
+def get_mails(to_match: str) -> list:
+    to_mails = []
+    match = findall(PATTERNS["To_data"], to_match)
+    for mail in match:
+        if mail[1:-1] not in to_mails:  # [1:-1] without <> or '' for
+            to_mails.append(mail[1:-1])  # <address@mail.com>
+    return to_mails
 
 
 def get_date(eml_body: str) -> Optional[str]:
