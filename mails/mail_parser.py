@@ -6,7 +6,7 @@ import argparse
 
 PATTERNS = {
     "From_string": compile(r"From:[\s\S]+?>"),
-    "To_string": compile(r"To:[\s\S]+?Subject: "),
+    "To_string": compile(r"To:[\s\S]+?(?=Subject: |CC: )"),
     "Mail": compile(r"[<'].+?[>']"),
     "Date_string": compile(r"Date:.+"),
     "Message-ID_string": compile(r"Message-ID:.+>"),
@@ -53,7 +53,7 @@ def get_to(eml_body: str) -> Optional[str]:
 
 def get_mails(to_match: str) -> list:
     to_mails = []
-    match = findall(PATTERNS["To_data"], to_match)
+    match = findall(PATTERNS["Mail"], to_match)
     for mail in match:
         if mail[1:-1] not in to_mails:  # [1:-1] without <> or '' for
             to_mails.append(mail[1:-1])  # <address@mail.com>
