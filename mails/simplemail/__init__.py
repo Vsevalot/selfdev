@@ -1,0 +1,1 @@
+from .SimpleEmail import Message
