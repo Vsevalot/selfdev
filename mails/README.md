@@ -5,5 +5,5 @@
 
 Запуск скрипта
 ```
-python3 cli.py main <PATH TO FOLDER WITH EMAILS> -m <METAFILE NAME> -o <OLD FORMAT>
+python3 cli.py <PATH TO FOLDER WITH EMAILS> -m <METAFILE NAME> -o <OLD FORMAT>
 ```
