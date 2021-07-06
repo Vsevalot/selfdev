@@ -5,5 +5,12 @@
 
 Запуск скрипта
 ```
-python3 cli.py <PATH TO FOLDER WITH EMAILS> -m <METAFILE NAME> -o <OLD FORMAT>
+python3 cli.py <PATH TO FOLDER WITH EMAILS> -m <METAFILE NAME> -o
 ```
+## Параметры скрипта
+
+| Имя |	Описание | Значение по умолчанию
+| ------------- | ------------- | ------------- |
+| PATH TO FOLDER WITH EMAILS| путь к папке с email | Обязательный параметр
+| -m | имя файла для сохранения метаданных | METADATA_FILENAME из файла metadata.py
+| -o | флаг старого формата | False

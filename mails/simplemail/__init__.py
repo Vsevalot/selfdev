@@ -3,10 +3,10 @@ from .re_search import (get_sender_from_eml, get_receivers_from_eml,
                         get_date_from_eml, get_message_id_from_eml,
                         get_subject_from_eml)
 from .sm_exceptions import SimpleMailException
-from typing import List
+from typing import Set
 
 
-class Message():
+class Email():
     def __init__(self, path_to_eml: Path):
         self.body = get_body(path_to_eml)
         self.sender = get_sender_from_eml(self.body)
@@ -21,7 +21,7 @@ class Message():
     def get_sender(self) -> str:
         return self.sender
 
-    def get_receivers(self) -> List[str]:
+    def get_receivers(self) -> Set[str]:
         return self.receivers
 
     def get_subject(self):

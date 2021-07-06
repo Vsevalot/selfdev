@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Set
 from re import search, compile
 from datetime import datetime
 from .validation import is_email
@@ -45,7 +45,7 @@ def get_sender_from_eml(eml_body: str) -> str:
     raise SenderException(f"Sender field is not an email: {sender_eml}")
 
 
-def get_receivers_from_eml(eml_body: str) -> List[str]:
+def get_receivers_from_eml(eml_body: str) -> Set[str]:
     """
     Gives a list of email receivers
     Raises:
@@ -63,18 +63,17 @@ def get_receivers_from_eml(eml_body: str) -> List[str]:
     return receivers
 
 
-def get_receivers(receiver_string: str) -> List[str]:
+def get_receivers(receiver_string: str) -> Set[str]:
     """
     Gives a list of receivers from the given string with To field value
     Raises:
         ReceiversException
     """
-    receivers = []
+    receivers = set()
     for split_receiver in receiver_string.split(','):
-        if (receiver := get_bracket_content(split_receiver)) is not None:
-            if receiver in receivers:
-                continue
-            receivers.append(receiver)
+        receiver = get_bracket_content(split_receiver)
+        if receiver is not None:
+            receivers.add(receiver)
     if not receivers:
         raise ReceiversException(f"No receivers found in: {receiver_string}")
     return receivers

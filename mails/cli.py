@@ -21,8 +21,7 @@ def get_script_args():
                         help=f"name of the metadata file, default is "
                              f"{METADATA_FILENAME}")
 
-    parser.add_argument("--old_format", "-o",
-                        type=bool,
+    parser.add_argument('-o', action='store_true',
                         default=False,
                         help="Use old metadata format")
     return parser.parse_args()
@@ -42,12 +41,12 @@ def write_metadata_file(args: argparse.Namespace):
                          f"got {folder} instead")
     emails = get_emails(folder)
 
-    if args.old_format:
+    if args.o:
         save_to_metadata_old(file_name, emails)
     else:
         save_to_metadata(file_name, emails)
 
-    print_cyan(f"{file_name} completed")
+    print_cyan(f"\nMetadata file {file_name} is completed")
 
 
 if __name__ == '__main__':
