@@ -1,4 +1,4 @@
-from typing import Optional, List, Set
+from typing import Optional, Set
 from re import search, compile
 from datetime import datetime
 from .validation import is_email
@@ -8,10 +8,10 @@ from .sm_exceptions import (SenderException, ReceiversException,
 
 PATTERNS = {
     "Sender field": compile(r"From:[\w\W]*?<[\w\W]+?>"),
-    "Receiver field": compile(r"To:[\w\W]+?(?=Subject: |CC: )"),
+    "Receiver field": compile(r"To:[\w\W]+?(?=Subject:|CC:)"),
     "Date field": compile(r"Date:.+"),
     "date": compile(r"\w+, \d{1,2} \w+ \d{4} \d{1,2}:\d{1,2}:\d{1,2}"),
-    "Subject field": compile(r"Subject: .+"),
+    "Subject field": compile(r"Subject:.+"),
     "Message-ID field": compile(r"Message-ID: <.+>")
 }
 
