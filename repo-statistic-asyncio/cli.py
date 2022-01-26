@@ -1,7 +1,5 @@
-import fire
 from app.settings import GITHUB_TOKEN
-from app.helping_functions import get_time_period_string
-from app.usecases import list_contributors
+import fire
 from typing import Union, NoReturn
 
 
