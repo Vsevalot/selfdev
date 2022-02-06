@@ -1,12 +1,12 @@
 from typing import Union, Optional
+from enum import Enum
+from pydantic import BaseModel
 from requests.models import CaseInsensitiveDict
 from multidict import CIMultiDictProxy
+from datetime import datetime
 
 
 HeadersType = Union[CaseInsensitiveDict, CIMultiDictProxy]
-
-
-from pydantic import BaseModel
 
 
 class UserShort(BaseModel):
@@ -34,3 +34,15 @@ class CommitInfo(BaseModel):
         if self.author is None:
             return self.commit.author.name
         return self.author.login
+
+
+class PRState(str, Enum):
+    open = "open"
+    closed = "closed"
+
+
+class PRInfo(BaseModel):
+    url: str
+    state: PRState
+    created_at: datetime
+    closed_at: Optional[datetime]

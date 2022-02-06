@@ -37,6 +37,24 @@ class GithubClient:
               f'{organisation_name}/{repository_name}/commits'
         return await self._get_async(url)
 
+    def get_pulls(
+            self,
+            organisation_name: str,
+            repository_name: str,
+    ) -> Generator[NoReturn, dict, NoReturn]:
+        url = f'{self._base_path}/repos/' \
+              f'{organisation_name}/{repository_name}/pulls'
+        return self._get(url)
+
+    async def get_pulls_async(
+            self,
+            organisation_name: str,
+            repository_name: str,
+    ) -> list[dict]:
+        url = f'{self._base_path}/repos/' \
+              f'{organisation_name}/{repository_name}/pulls'
+        return await self._get_async(url)
+
     def _get(
         self,
         url: str,
@@ -85,7 +103,10 @@ class GithubClient:
             headers: HeadersType,
     ) -> int:
         relative_links = headers.get(self._relative_links_field_name)
-        result = re.search(self._last_page_pattern, relative_links)
-        if result is None:
+        if relative_links is None:
             return self._default_last_page
-        return int(result.group("last_page"))
+
+        last_page_match = re.search(self._last_page_pattern, relative_links)
+        if last_page_match is None:
+            return self._default_last_page
+        return int(last_page_match.group("last_page"))
