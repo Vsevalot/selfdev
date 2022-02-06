@@ -1,7 +1,7 @@
 from collections import defaultdict
-from typing import NoReturn
+from typing import NoReturn, Iterable
 
-from app.typehints import CommitType
+from app.typehints import CommitInfo
 
 
 class ContributorsStatistic:
@@ -13,14 +13,11 @@ class ContributorsStatistic:
 
     def consume(
         self,
-        commits_page: list[CommitType],
+        commits: Iterable[CommitInfo],
     ) -> NoReturn:
-        for c in commits_page:
-            author = c["author"]
-            if author is None:
-                author = {"login": None}
-            committer = author["login"]
-            self._statistic[committer] += 1
+        for c in commits:
+            login = c.get_contributor()
+            self._statistic[login] += 1
 
     def __repr__(self):
         res = f"{'Login':{self._login_column_width}} {'commits'}\n"

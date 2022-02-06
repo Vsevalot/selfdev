@@ -3,7 +3,7 @@ import requests
 import re
 from typing import Generator, NoReturn
 
-from app.typehints import HeadersType, CommitType
+from app.typehints import HeadersType
 
 
 class GithubClient:
@@ -19,20 +19,20 @@ class GithubClient:
     ):
         self._token = token
 
-    def get_repository_commits(
+    def get_commits(
             self,
             organisation_name: str,
             repository_name: str,
-    ) -> Generator[NoReturn, CommitType, NoReturn]:
+    ) -> Generator[NoReturn, dict, NoReturn]:
         url = f'{self._base_path}/repos/' \
               f'{organisation_name}/{repository_name}/commits'
         return self._get(url)
 
-    async def get_repository_commits_async(
+    async def get_commits_async(
             self,
             organisation_name: str,
             repository_name: str,
-    ) -> list[dict]:
+    ) -> list:
         url = f'{self._base_path}/repos/' \
               f'{organisation_name}/{repository_name}/commits'
         return await self._get_async(url)
@@ -40,26 +40,29 @@ class GithubClient:
     def _get(
         self,
         url: str,
-    ) -> Generator[NoReturn, CommitType, NoReturn]:
+    ) -> Generator[NoReturn, dict, NoReturn]:
         response = requests.get(
             url,
             headers={"Authorization": f"Bearer {self._token}"},
         )
-        yield response.json()
-        last_page = self._get_last_page(response.headers)
 
+        for c in response.json():
+            yield c
+
+        last_page = self._get_last_page(response.headers)
         for page in range(2, last_page + 1):
             response = requests.get(
                 url,
                 params={self._page_param_name: page},
                 headers={"Authorization": f"Bearer {self._token}"},
             )
-            yield response.json()
+            for c in response.json():
+                yield c
 
     async def _get_async(
             self,
             url: str,
-    ) -> list[dict]:
+    ) -> list:
         all_pages = []
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:

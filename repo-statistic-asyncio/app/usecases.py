@@ -4,6 +4,7 @@ from app.clients import GithubClient
 from app.settings import GITHUB_TOKEN
 from app.toys import stopwatches, async_stopwatches
 from app.entities import ContributorsStatistic
+from app.repo import Repo
 
 
 @stopwatches
@@ -13,13 +14,12 @@ def get_commit_statistics(
         repository_name: str,
 ) -> ContributorsStatistic:
     stat = ContributorsStatistic()
-    commits = github_client.get_repository_commits(
+    commits = Repo.get_repository_commits(
+        github_client,
         organisation_name,
         repository_name,
     )
-    for c in commits:
-        stat.consume(c)
-
+    stat.consume(commits)
     return stat
 
 
@@ -29,12 +29,13 @@ async def get_commit_statistics_async(
         organisation_name: str,
         repository_name: str,
 ) -> ContributorsStatistic:
-    res = await github_client.get_repository_commits_async(
+    stat = ContributorsStatistic()
+    commits = await Repo.get_repository_commits_async(
+        github_client,
         organisation_name,
         repository_name,
     )
-    stat = ContributorsStatistic()
-    stat.consume(res)
+    stat.consume(commits)
     return stat
 
 
