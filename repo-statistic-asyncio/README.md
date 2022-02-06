@@ -3,3 +3,4 @@ QUESTIONS:
 - Can I make a single wrapper for both sync and async functions?
 - What is the type hint for async stopwatch?
 - defaultdict(lambda: 0) ... rly? I just want a default 0
+- PR and Issue relations

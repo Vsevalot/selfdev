@@ -36,13 +36,22 @@ class CommitInfo(BaseModel):
         return self.author.login
 
 
-class PRState(str, Enum):
+
+class _EventState(str, Enum):
     open = "open"
     closed = "closed"
 
 
-class PRInfo(BaseModel):
+class EventInfo(BaseModel):
     url: str
-    state: PRState
+    state: _EventState
     created_at: datetime
     closed_at: Optional[datetime]
+
+
+class PRInfo(EventInfo):
+    draft: bool
+
+
+class IssueInfo(EventInfo):
+    pass

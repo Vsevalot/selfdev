@@ -55,6 +55,24 @@ class GithubClient:
               f'{organisation_name}/{repository_name}/pulls'
         return await self._get_async(url)
 
+    def get_issues(
+            self,
+            organisation_name: str,
+            repository_name: str,
+    ) -> Generator[NoReturn, dict, NoReturn]:
+        url = f'{self._base_path}/repos/' \
+              f'{organisation_name}/{repository_name}/issues'
+        return self._get(url)
+
+    async def get_issues_async(
+            self,
+            organisation_name: str,
+            repository_name: str,
+    ) -> list[dict]:
+        url = f'{self._base_path}/repos/' \
+              f'{organisation_name}/{repository_name}/issues'
+        return await self._get_async(url)
+
     def _get(
         self,
         url: str,
@@ -80,7 +98,7 @@ class GithubClient:
     async def _get_async(
             self,
             url: str,
-    ) -> list:
+    ) -> list[dict]:
         all_pages = []
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
