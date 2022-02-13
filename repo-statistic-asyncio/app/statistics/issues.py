@@ -16,7 +16,7 @@ class IssuesStatistic(Statistic):
         repository: str,
         since: Optional[datetime],
         until: Optional[datetime],
-        days_to_old: int = 14,
+        days_to_old: int,
     ) -> NoReturn:
         super().__init__(organisation, repository, since, until)
         self._now = datetime.now(timezone.utc)
@@ -44,7 +44,8 @@ class IssuesStatistic(Statistic):
         return False
 
     def __str__(self) -> str:
-        res = f"{self._str_head} {self._organisation}/{self._repository}\n"
+        res = f"{self._str_head} https://github.com/" \
+              f"{self._organisation}/{self._repository}\n"
         res += f"Time period: {self._time_range}\n"
         res += (
             f"{'State':<{self._state_column_width}}|"
@@ -54,7 +55,7 @@ class IssuesStatistic(Statistic):
             "_" * (self._state_column_width + self._number_column_width + 1)
             + "\n"
         )
-        for state, number in self._stat.items():
+        for state, number in self._statistic.items():
             res += (
                 f"{state:<{self._state_column_width}}|"
                 f"{number:>{self._number_column_width}}\n"

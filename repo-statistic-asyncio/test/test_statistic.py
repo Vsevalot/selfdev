@@ -59,6 +59,7 @@ def test_issue_statistic():
         repository='some repo',
         since=None,
         until=None,
+        days_to_old=30,
     )
     stat.consume(issues)
     statistic = stat.get_statistic()
@@ -96,6 +97,7 @@ def test_pr_statistic():
         repository='some repo',
         since=None,
         until=None,
+        days_to_old=30,
     )
     stat.consume(prs)
     statistic = stat.get_statistic()
@@ -157,6 +159,7 @@ def test_contributor_statistic():
         since=None,
         until=None,
         branch=None,
+        top_n=15,
     )
 
     stat.consume(commits)

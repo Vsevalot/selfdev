@@ -11,8 +11,9 @@ class PullRequestsStatistic(IssuesStatistic):
             repository: str,
             since: Optional[datetime],
             until: Optional[datetime],
+            days_to_old: int,
     ) -> NoReturn:
-        super().__init__(organisation, repository, since, until)
+        super().__init__(organisation, repository, since, until, days_to_old)
         self._str_head = 'Pull requests statistic for:'
 
     def __str__(self):

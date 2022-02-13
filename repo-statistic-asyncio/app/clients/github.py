@@ -1,13 +1,14 @@
 import aiohttp
 import requests
 import re
-from typing import Generator, NoReturn
+from typing import Generator, NoReturn, Optional
 
 from app.typehints import HeadersType
+from app.exceptions import raise_for_all
 
 
 class GithubClient:
-    _last_page_pattern = r'page=(?P<last_page>\d*)>; rel="last"'
+    _last_page_pattern = r'page=(?P<last_page>\d+)>; rel="last"'
     _page_param_name = "page"
     _relative_links_field_name = "link"
     _default_last_page = 1
@@ -15,10 +16,11 @@ class GithubClient:
 
     def __init__(
         self,
-        token: str,
+        token: Optional[str] = None,
     ):
-        self._token = token
-        self._headers = {"Authorization": f"Bearer {self._token}"}
+        self._headers = {}
+        if token:
+            self._headers = {"Authorization": f"Bearer {token}"}
 
     def get_commits(
             self,
@@ -108,7 +110,7 @@ class GithubClient:
             headers=self._headers,
             params=kwargs,
         )
-
+        raise_for_all(response)
         for c in response.json():
             yield c
 
@@ -119,6 +121,7 @@ class GithubClient:
                 params={self._page_param_name: page} | kwargs,
                 headers=self._headers,
             )
+            raise_for_all(response)
             for c in response.json():
                 yield c
 
@@ -134,6 +137,7 @@ class GithubClient:
                     params=kwargs,
                     headers=self._headers,
             ) as resp:
+                raise_for_all(resp)
                 page_data = await resp.json()
                 all_pages.extend(page_data)
             last_page = self._get_last_page(resp.headers)
@@ -144,6 +148,7 @@ class GithubClient:
                     params={self._page_param_name: page} | kwargs,
                     headers=self._headers,
                 ) as resp:
+                    raise_for_all(resp)
                     page_data = await resp.json()
                     all_pages.extend(page_data)
         return all_pages

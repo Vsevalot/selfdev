@@ -18,7 +18,7 @@ class ContributorsStatistic(Statistic):
         since: Optional[datetime],
         until: Optional[datetime],
         branch: Optional[str],
-        top_n: int = 30,
+        top_n: int,
     ):
         super().__init__(
             organisation=organisation,
@@ -41,7 +41,7 @@ class ContributorsStatistic(Statistic):
     def __str__(self) -> str:
         res = (
             f"Top {self._top_n} contributors for: "
-            f"{self._organisation}/{self._repository}\n"
+            f"https://github.com/{self._organisation}/{self._repository}\n"
         )
         if self._branch:
             res += f"Branch: {self._branch}\n"
