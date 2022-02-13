@@ -36,7 +36,6 @@ class CommitInfo(BaseModel):
         return self.author.login
 
 
-
 class _EventState(str, Enum):
     open = "open"
     closed = "closed"

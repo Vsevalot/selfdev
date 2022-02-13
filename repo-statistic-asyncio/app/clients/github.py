@@ -18,68 +18,95 @@ class GithubClient:
         token: str,
     ):
         self._token = token
+        self._headers = {"Authorization": f"Bearer {self._token}"}
 
     def get_commits(
             self,
             organisation_name: str,
             repository_name: str,
+            **kwargs,
     ) -> Generator[NoReturn, dict, NoReturn]:
-        url = f'{self._base_path}/repos/' \
-              f'{organisation_name}/{repository_name}/commits'
-        return self._get(url)
+        url = self._get_commits_url(organisation_name, repository_name)
+        return self._get(url, **kwargs)
 
     async def get_commits_async(
             self,
             organisation_name: str,
             repository_name: str,
+            **kwargs,
     ) -> list:
-        url = f'{self._base_path}/repos/' \
-              f'{organisation_name}/{repository_name}/commits'
-        return await self._get_async(url)
+        url = self._get_commits_url(organisation_name, repository_name)
+        return await self._get_async(url, **kwargs)
 
-    def get_pulls(
+    def _get_commits_url(
             self,
             organisation_name: str,
             repository_name: str,
-    ) -> Generator[NoReturn, dict, NoReturn]:
-        url = f'{self._base_path}/repos/' \
-              f'{organisation_name}/{repository_name}/pulls'
-        return self._get(url)
-
-    async def get_pulls_async(
-            self,
-            organisation_name: str,
-            repository_name: str,
-    ) -> list[dict]:
-        url = f'{self._base_path}/repos/' \
-              f'{organisation_name}/{repository_name}/pulls'
-        return await self._get_async(url)
+    ) -> str:
+        return f'{self._base_path}/repos/' \
+               f'{organisation_name}/{repository_name}/commits'
 
     def get_issues(
             self,
             organisation_name: str,
             repository_name: str,
+            **kwargs,
     ) -> Generator[NoReturn, dict, NoReturn]:
-        url = f'{self._base_path}/repos/' \
-              f'{organisation_name}/{repository_name}/issues'
-        return self._get(url)
+        url = self._get_issues_url(organisation_name, repository_name)
+        return self._get(url, **kwargs)
 
     async def get_issues_async(
             self,
             organisation_name: str,
             repository_name: str,
+            **kwargs,
     ) -> list[dict]:
-        url = f'{self._base_path}/repos/' \
-              f'{organisation_name}/{repository_name}/issues'
-        return await self._get_async(url)
+        url = self._get_issues_url(organisation_name, repository_name)
+        return await self._get_async(url, **kwargs)
+
+    def _get_issues_url(
+            self,
+            organisation_name: str,
+            repository_name: str,
+    ):
+        return f'{self._base_path}/repos/' \
+               f'{organisation_name}/{repository_name}/issues'
+
+    def get_pulls(
+            self,
+            organisation_name: str,
+            repository_name: str,
+            **kwargs,
+    ) -> Generator[NoReturn, dict, NoReturn]:
+        url = self._get_pulls_url(organisation_name, repository_name)
+        return self._get(url, **kwargs)
+
+    async def get_pulls_async(
+            self,
+            organisation_name: str,
+            repository_name: str,
+            **kwargs,
+    ) -> list[dict]:
+        url = self._get_pulls_url(organisation_name, repository_name)
+        return await self._get_async(url, **kwargs)
+    
+    def _get_pulls_url(
+            self,
+            organisation_name: str,
+            repository_name: str,
+    ) -> str:
+        return f'{self._base_path}/repos/' \
+               f'{organisation_name}/{repository_name}/pulls'
 
     def _get(
         self,
         url: str,
+        **kwargs,
     ) -> Generator[NoReturn, dict, NoReturn]:
         response = requests.get(
             url,
-            headers={"Authorization": f"Bearer {self._token}"},
+            headers=self._headers,
+            params=kwargs,
         )
 
         for c in response.json():
@@ -89,8 +116,8 @@ class GithubClient:
         for page in range(2, last_page + 1):
             response = requests.get(
                 url,
-                params={self._page_param_name: page},
-                headers={"Authorization": f"Bearer {self._token}"},
+                params={self._page_param_name: page} | kwargs,
+                headers=self._headers,
             )
             for c in response.json():
                 yield c
@@ -98,10 +125,15 @@ class GithubClient:
     async def _get_async(
             self,
             url: str,
+            **kwargs,
     ) -> list[dict]:
         all_pages = []
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
+            async with session.get(
+                    url,
+                    params=kwargs,
+                    headers=self._headers,
+            ) as resp:
                 page_data = await resp.json()
                 all_pages.extend(page_data)
             last_page = self._get_last_page(resp.headers)
@@ -109,8 +141,8 @@ class GithubClient:
             for page in range(2, last_page + 1):
                 async with session.get(
                     url,
-                    params={self._page_param_name: page},
-                    headers={"Authorization": f"Bearer {self._token}"},
+                    params={self._page_param_name: page} | kwargs,
+                    headers=self._headers,
                 ) as resp:
                     page_data = await resp.json()
                     all_pages.extend(page_data)
@@ -120,6 +152,11 @@ class GithubClient:
             self,
             headers: HeadersType,
     ) -> int:
+        """
+        Get last page number from response headers.
+        I know there are 'next' and 'links' fields in a request response,
+        but I wanted to work with the 'link' header's field
+        """
         relative_links = headers.get(self._relative_links_field_name)
         if relative_links is None:
             return self._default_last_page
