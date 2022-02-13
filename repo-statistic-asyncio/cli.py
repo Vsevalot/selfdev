@@ -7,8 +7,8 @@ from app import usecases, validation, helping_functions
 from app.toys import stopwatches, async_stopwatches
 from app.exceptions import exception_handler, exception_handler_async
 
-DAYS_TO_OLD = 30
-TOP_N = 30
+DAYS_TO_OLD = 14
+TOP_N = 20
 
 
 def get_script_args() -> argparse.Namespace:
