@@ -26,14 +26,16 @@ class Statistic(ABC):
         """
         Gives a string representation of the time range
         """
-        if since is None and until is None:
-            return 'for all time'
-        if since is None:
-            return f'until {until.strftime("%Y-%m-%d")}'
-        if until is None:
-            return f'since {since.strftime("%Y-%m-%d")} to now'
-        return f'since {since.strftime("%Y-%m-%d")} ' \
-               f'until {until.strftime("%Y-%m-%d")}'
+        match (since, until):
+            case (None, None):
+                return 'for all time'
+            case (None, until):
+                return f'until {until.strftime("%Y-%m-%d")}'
+            case (since, None):
+                return f'since {since.strftime("%Y-%m-%d")} to now'
+            case (since, until):
+                return f'since {since.strftime("%Y-%m-%d")} ' \
+                       f'until {until.strftime("%Y-%m-%d")}'
 
     def get_statistic(self) -> dict:
         return self._statistic
