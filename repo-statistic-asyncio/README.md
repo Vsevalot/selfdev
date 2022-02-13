@@ -6,3 +6,4 @@ QUESTIONS:
 - PR and Issue relations. PR is basically an issue. Now I just use params from
 issues. It looks wrong. But I don't want to duplicate code.
 - Isn't there too many for the Github client?
+- Sorting in dunder str doesn't look good

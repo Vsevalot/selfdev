@@ -1,25 +1,19 @@
-from typing import Iterable, NoReturn
+from typing import NoReturn, Optional
+from datetime import datetime
 
-from app.typehints import PRInfo, _EventState
+from app.statistics.issues import IssuesStatistic
 
 
-class PullRequestsStatistic:
+class PullRequestsStatistic(IssuesStatistic):
     def __init__(
             self,
-            pull_requests: Iterable[PRInfo],
+            organisation: str,
+            repository: str,
+            since: Optional[datetime],
+            until: Optional[datetime],
     ) -> NoReturn:
-        self._stat = {state: 0 for state in _EventState}
-        self._consume(pull_requests)
+        super().__init__(organisation, repository, since, until)
+        self._str_head = 'Pull requests statistic for:'
 
-    def _consume(
-            self,
-            pull_requests: Iterable[PRInfo],
-    ) -> NoReturn:
-        for pr in pull_requests:
-            self._stat[pr.state] += 1
-
-    def __repr__(self) -> str:
-        res = "PR statistic:\n"
-        for state, count in self._stat.items():
-            res += f"{state}: {count}\n"
-        return res
+    def __str__(self):
+        return super().__str__()

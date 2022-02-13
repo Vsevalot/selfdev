@@ -1,30 +1,62 @@
-from typing import Iterable, NoReturn
+from typing import Iterable, NoReturn, Optional
+from datetime import datetime, timezone
 
 from app.typehints import IssueInfo, _EventState
+from app.statistics.common import Statistic
 
 
-class IssuesStatistic:
-    _state_column_width = 20
-    _number_column_width = 15
+class IssuesStatistic(Statistic):
+    _state_column_width = 12
+    _number_column_width = 7
+    _str_head = 'Issues statistic for:'
 
     def __init__(
-            self,
-            issues: Iterable[IssueInfo],
+        self,
+        organisation: str,
+        repository: str,
+        since: Optional[datetime],
+        until: Optional[datetime],
+        days_to_old: int = 14,
     ) -> NoReturn:
-        self._issues = issues
-        self._stat = {state: 0 for state in _EventState}
-        self._consume(issues)
+        super().__init__(organisation, repository, since, until)
+        self._now = datetime.now(timezone.utc)
+        self._days_to_old = days_to_old
+        self._statistic = {state: 0 for state in _EventState} | {"old": 0}
 
-    def _consume(
-            self,
-            issues: Iterable[IssueInfo],
+    def consume(
+        self,
+        issues: Iterable[IssueInfo],
     ) -> NoReturn:
         for issue in issues:
-            self._stat[issue.state] += 1
+            self._statistic[issue.state] += 1
+            if self._is_old(issue):
+                self._statistic["old"] += 1
 
-    def __repr__(self) -> str:
-        res = 'Issue statistic:\n'
-        for state, count in self._stat.items():
-            res += f'{state:{self._state_column_width}}:' \
-                   f'{count:{self._number_column_width}}\n'
+    def _is_old(
+        self,
+        issue: IssueInfo,
+    ) -> bool:
+        if issue.state != _EventState.open:
+            return False
+        opened_for = (self._now - issue.created_at).days
+        if opened_for > self._days_to_old:
+            return True
+        return False
+
+    def __str__(self) -> str:
+        res = f"{self._str_head} {self._organisation}/{self._repository}\n"
+        res += f"Time period: {self._time_range}\n"
+        res += (
+            f"{'State':<{self._state_column_width}}|"
+            f"{'Number':>{self._number_column_width}}\n"
+        )
+        res += (
+            "_" * (self._state_column_width + self._number_column_width + 1)
+            + "\n"
+        )
+        for state, number in self._stat.items():
+            res += (
+                f"{state:<{self._state_column_width}}|"
+                f"{number:>{self._number_column_width}}\n"
+            )
         return res

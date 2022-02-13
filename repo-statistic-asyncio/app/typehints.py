@@ -31,6 +31,10 @@ class CommitInfo(BaseModel):
     committer: Optional[User]
 
     def get_contributor(self) -> str:
+        """
+        Sometimes field author is empty, so
+        we should look for the name of committer
+        """
         if self.author is None:
             return self.commit.author.name
         return self.author.login
@@ -48,9 +52,9 @@ class EventInfo(BaseModel):
     closed_at: Optional[datetime]
 
 
-class PRInfo(EventInfo):
-    draft: bool
-
-
 class IssueInfo(EventInfo):
     pass
+
+
+class PRInfo(IssueInfo):
+    draft: bool
