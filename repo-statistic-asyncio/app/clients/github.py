@@ -111,8 +111,8 @@ class GithubClient:
             params=kwargs,
         )
         raise_for_all(response)
-        for c in response.json():
-            yield c
+        for item in response.json():
+            yield item
 
         last_page = self._get_last_page(response.headers)
         for page in range(2, last_page + 1):
@@ -122,8 +122,8 @@ class GithubClient:
                 headers=self._headers,
             )
             raise_for_all(response)
-            for c in response.json():
-                yield c
+            for item in response.json():
+                yield item
 
     async def _get_async(
             self,
