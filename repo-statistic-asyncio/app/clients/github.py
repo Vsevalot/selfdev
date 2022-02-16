@@ -160,7 +160,8 @@ class GithubClient:
         """
         Get last page number from response headers.
         I know there are 'next' and 'links' fields in a request response,
-        but I wanted to work with the 'link' header's field
+        but I wanted to work with the 'link' header's field because
+        the documentation tells only about this field
         """
         relative_links = headers.get(self._relative_links_field_name)
         if relative_links is None:
